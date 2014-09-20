@@ -1,0 +1,85 @@
+
+LyTypes:
+    LyName
+    LyNumber (technically two types: LyFloat (default) and LyInt)
+    LyString
+    LyList (doubles as a map)
+    LyBlock
+    LyFunc
+    LyListLiteral
+
+
+
+
+Variables:
+x = 10
+string = "Hello World!"
+list = [10, 12, 13]
+map = [thing = "A thing", y = 10, list = list]
+map.thing
+-> "A thing"
+map.y
+-> 10
+map."thing"
+-> "A thing"
+list.0
+-> 10
+list."0"
+-> 10
+mixedList = [10, 13, thing = 13, "A string"]
+
+Blocks:
+x = 10
+double = (x * 2)
+double
+-> 20
+x = 30
+double
+-> 60
+
+References:
+x = 10
+y := x
+y
+-> 10
+x = 20
+y
+-> 20
+
+Conditional:
+
+if (x > 0) (
+    dosomething()
+) elif (x < 0) (
+    doThing2()
+) else (
+    dosomethingElse()
+)
+
+Looping:
+x = 0
+while (x < 10) (
+    print[x]
+)
+
+Function: Composite of a list (parameters), and a block. The list binds a local 
+namespace (LyList), and can be directly accessed via the name '$'. 
+
+f = func [x] (
+    return ((x * 10) + 13)
+)
+f_alt = func [x] (
+    return (($.x * 10) + 13)
+)    
+sum = func [...] (
+    sum = 0;
+    for num in $ (
+        sum += num
+    )
+    return sum
+)
+
+Functions are called via lists:
+f[10]
+
+

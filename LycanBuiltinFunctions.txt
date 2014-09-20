@@ -1,0 +1,108 @@
+
+=================
+      Lycan     
+Builtin functions
+=================
+
+----
+core
+----
+(all loaded by default into global namespace)
+core contains core language functionality
+
+core.load (LyName namespace):
+    loads the specified namespace as a child to the current ns - can append a table
+    or a single value.
+    (lookup querries for local names will fallback to child namespaces; thus if
+    the name 'x' is not defined locally, but the table 'foo' was loaded, (which
+    contains the names 'x' and 'bar'), an attempt to access 'x' will return foo.x
+    instead of raising a name undefined error.
+core.unload (LyName namespace):
+    unloads the specified namespace if loaded; does nothing if not.
+
+= load/unload example =
+    foo = {x = 10, y = 12, bar = "baz"}
+    print(x)
+-> error: 'x' is undefined
+    load(foo)
+    print(x)
+-> 10
+    unload(foo)
+    load(foo.bar)
+    print(bar)
+-> "baz"
+    unload(bar)
+-> error: 'bar' is undefined
+
+core.exists (LyName name):
+    returns true if the specified name exists, and false if it does not
+
+core.import (LyName name, LyString filePath)
+    opens the specified file, and compiles and runs its contents; stores 
+    the results in name (a table which can be loaded if desired).
+
+-------
+default
+-------
+Also loaded by default.
+default contains standard utility functions
+
+
+default.list (stream):
+    constructs a table out of ordered items w/ numbers as keys (starting at 1)
+    and returns the result
+    eg:
+        list("foo", "bar", "baz", 1, 2, 3)
+    -> {1 = "foo", 2 = "bar", 3 = "baz", 4 = 1, 5 = 2, 6 = 3}
+
+default.join (LyString sep, LyTable list):
+    args are stringified, joined together using sep (which defaults to "" unless
+    directly specified), and returned
+    eg:
+        join(" ", "
+
+--
+io
+--
+
+io.print (stream):
+    multiple args are stringified, concatenated, and printed to stdout w/ newline.
+    no return value
+    loaded by default. (don't need to access via 'io')
+io.put (stream):
+    Identical to io.print, except that output is not followed by newline.
+io.prompt (LyString prompt [, LyType type]):
+    Outputs prompt to stdout, and fetches all input chars from stdin until endline is reached.
+    Returns input as a string (default) or a given type (if specified)
+io.getchars (LyNumber count | LyString endPattern)
+
+
+----
+file
+----
+This is a high level language: the programmer should never have to directly
+handle file constructs - read/write/append operations open the desired file,
+perform an operation, and close the file.
+    
+file.path (stream):
+    accepts multiple args; args are stringified and intelligently joined 
+    together into a valid system-specific file path. Returns the result as
+    a string.
+    eg:
+        load(file.path)
+        path("/", "mydir/", "anotherDir", "/dir2/", "/dir3", "myfile", ".txt")
+    -> "/mydir/anotherDir/dir2/dir3/myfile.txt"
+    
+file.write (LyString filePath, LyString input):
+    file at filePath is opened using 'w', input is written, and the file is closed.
+
+file.read
+
+file.append
+
+
+
+
+
+
+    

@@ -1,0 +1,157 @@
+
+Three phases:
+LyQueue * LyCompile (char *input)
+LyQueue * LyParse (LyQueue *input)
+void * LyExec (LyQueue *queue, LyNamespace *ns, LyInstrType endInstr)
+
+LyCompile: Compile source code into a string
+LyParse: Check for syntax errors and do further processing
+LyExec: Run the compiled & parsed code.
+
+=============
+Conditionals:
+=============
+if [LyGroup | LyBlock] [LyGroup | LyBlock] 
+(elif [LyGroup | LyBlock] [LyGroup | LyBlock] ...)
+(else [LyGroup | LyBlock])
+eg: 
+"if (x > 0) { 
+    y += 1;
+} elif (x < 0) {
+    y -= 1;
+} else {
+    y = 0
+}"
+COMPILE:
+=> LyInstr(LYI_IF), LyGroup(...), LyBlock(...), LyInstr(LYI_ELIF), LyGroup(...), LyBlock(...), LyInstr(LYI_ELSE), LyBlock(...)
+PARSE:
+=> LyCondBlock(
+    LyCond(LyGroup(...), LyBlock(...)),
+    LyCond(LyGroup(...), LyBlock(...)),
+    LyCond(LyGroup(LyBool(true)), LyBlock(...)))
+
+========    
+Looping:
+========
+while [LyGroup | LyBlock] [LyBlock]
+eg:
+"while (i < thing) {
+    foo()
+    if (otherThing) {
+        break;
+    }
+    i += 1
+}"
+COMPILE:
+=> LyInstr(LYI_WHILE), 
+    LyGroup(LyName("i"), LyInstr(LYI_LT), LyName("thing"))), 
+    LyBlock(LyName("foo"), LyGroup(), LyInstr(LYI_ENDLINE),
+        LyInstr(LYI_IF), LyGroup(LyName("otherThing")), LyBlock(
+            LyInstr(LYI_BREAK, LyInstr(LYI_ENDLINE))), LyInstr(LYI_ENDLINE),
+        LyName("i"), LyInstr(LYI_RADD), LyNumber("1")),
+    LyInstr(LYI_ENDLINE)
+PARSE:
+=> LyWhileLoop(
+    LyGroup(LyName("i"), LyInstr(LYI_LT), LyName("thing")),
+    LyBlock(LyFuncCall(LyName("foo"), LyTable()), LyInstr(LYI_ENDLINE),
+        LyCondBlock(
+            LyCond(
+                LyGroup(LyName("otherThing", LyInstr(LYI_ENDLINE))), 
+                LyBlock(LyInstr(LYI_BREAK, LyInstr(LYI_ENDLINE))))
+        ), LyInstr(LYI_ENDLINE),
+        LyName("i"), LyInstr(LYI_RADD), LyNumber(1)))
+
+for [LyName] in [LyName | LyList | LyTable] [LyBlock]
+eg:
+"for item in myList {
+    print(item)
+}"
+COMPILE:
+=> LyInstr(LYI_FOREACH), LyName("item"), LyName("item"), LyBlock(...)
+PARSE:
+=> LyForLoop(
+    LyName("x"),
+    LyName("item"),
+    LyBlock(...))
+    
+==========    
+Functions:
+==========
+Definition:
+func [LyTable] [LyBlock]
+eg:
+"func <x = 1, y = 2> { 
+    x += 12
+    return x * y 
+}"
+COMPILE:
+=> LyInstr(LYI_FUNC), 
+    LyTable(LyName("x"), LyInstr(LYI_SET), LyNumber("1"),
+        LyName("y"), LyInstr(LYI_SET), LyNumber("2")), 
+    LyBlock(LyName("x"), LyInstr(LYI_RADD), LyNumber("12"), LyInstr(LYI_ENDLINE),
+        LyInstr(LYI_FUNC_RETURN), LyName("x"), LyInstr(LYI_MUL), LyName("y"), LyInstr(LYI_ENDLINE))
+PARSE:
+=> LyFunc(
+    LyTable(...)
+    LyBlock(LyName("x"), LyInstr(LYI_RADD), LyNumber("12"), LyInstr(LYI_ENDLINE),
+        LyFuncReturn(LyQueue(LyName("x"), LyInstr(LYI_MUL), LyName("y"), LyInstr(LYI_ENDLINE)))))
+
+[LyName] [LyTable | LyGroup]
+"print("Thing")"
+COMPILE:
+=> LyName("print"), LyGroup(LyString("Thing"), LyInstr(LYI_ENDLINE))
+PARSE:
+=> LyFuncCall(
+    LyName("print"),
+    LyTable("1" = LyString("Thing")))
+
+"doSomething(x = 12, y = 13)"
+
+
+
+
+
+
+Old:
+=============================
+Source:
+
+c = 0
+cnd = (c < 10)
+if cnd (
+    x = 10
+    y = (10 + 1) * 15
+    print[x - 1, y]
+)
+
+Compiled product:
+LyThread main:
+[LyName 'c'] [LY_SET] [LyBlock b1] [LY_ENDLINE]
+[LY_IF] [LyName 'c'] [LyBlock b2] [LY_ENDLINE]
+
+Blocks (LyBlocks internally contain pointers to structs, so the source isn't
+        really segmented, though if the LyCompiler produced bytecode, it would
+        look like this)
+
+b1: LyThread:
+[LyName 'c'] [LY_CMP_LT] [LyNum '10']
+b2: LyThread:
+[LyName 'x'] [LY_SET] [LyNum '10'] [LY_ENDLINE]
+[LyName 'y'] [LY_SET] [LyBlock b3] [LY_MUL] [LyNum '15'] [LY_ENDLINE]
+[LyName 'print'] [LyListLiteral l1]
+b3: LyThread:
+[LyNum '10'] [LY_ADD] [LyNum '1']
+
+List Literals:
+l1: LyThread:
+[LyName 'x'] [LY_SUB] [LyNum '1'] [LY_SEP] [LyName 'y']
+
+
+The vm will work backwards (eg. [LyBlock b1] -> [LY_SET] -> [LyName 'c']), 
+so the parsed code is really quite simple to evaluate.
+Note: This is a simplified overview of the object model - some names are
+shortened, and most object parameters/fields were not included.
+
+
+
+
